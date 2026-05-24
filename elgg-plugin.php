@@ -57,4 +57,9 @@ return [
 			],
 		],
 	],
+    'cli' => [
+        'commands' => [
+            \Tour\Cli\DoctorCommand::class,
+        ],
+    ],
 ];

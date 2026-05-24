@@ -23,7 +23,7 @@ define(function(require) {
 				data: {'page': page},
 				success: function(data) {
 					if (library == 'hopscotch') {
-						var data = jQuery.parseJSON(data);
+						var data = JSON.parse(data);
 
 						lib.startTour(data);
 					} else {
