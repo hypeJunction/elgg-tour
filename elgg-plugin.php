@@ -7,7 +7,7 @@
 return [
 	'plugin' => [
 		'name' => 'Tour',
-		'version' => '4.0.0',
+		'version' => '5.0.0',
 	],
 	'bootstrap' => 'Tour\\Bootstrap',
 	'entities' => [
@@ -58,7 +58,7 @@ return [
 			'resource' => 'tour/data',
 		],
 	],
-	'hooks' => [
+	'events' => [
 		'register' => [
 			'menu:entity' => [
 				'Tour\\Page\\EntityMenu::setUp' => [],

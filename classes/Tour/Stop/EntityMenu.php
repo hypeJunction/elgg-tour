@@ -2,7 +2,7 @@
 
 namespace Tour\Stop;
 
-use Elgg\Hook;
+use Elgg\Event;
 
 /**
  * Trims and tweaks the entity menu for Tour\Stop objects.
@@ -15,17 +15,17 @@ class EntityMenu {
 	 * Keeps only access/edit/delete items and rewrites the edit link to
 	 * the admin tour-stop editor.
 	 *
-	 * @param \Elgg\Hook $hook 'register' on 'menu:entity'
+	 * @param \Elgg\Event $event 'register' on 'menu:entity'
 	 *
 	 * @return \Elgg\Menu\MenuItems|array|null
 	 */
-	public static function setUp(Hook $hook) {
-		$entity = $hook->getEntityParam();
+	public static function setUp(Event $event) {
+		$entity = $event->getEntityParam();
 		if (!$entity instanceof \Tour\Stop) {
 			return null;
 		}
 
-		$return = $hook->getValue();
+		$return = $event->getValue();
 		$allowed = ['access', 'edit', 'delete'];
 
 		foreach ($return as $key => $item) {

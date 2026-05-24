@@ -51,5 +51,8 @@ class Bootstrap extends DefaultPluginBootstrap {
 			'link_class' => 'elgg-topbar-dropdown-link',
 			'data-library' => $js_lib,
 		]);
+
+		// Register seeder for fleet seeding / fixture creation.
+		elgg_register_event_handler('seeds', 'database', [\Tour\Database\Seeds\Seeder::class, 'addSeed']);
 	}
 }
