@@ -1,36 +1,32 @@
 <?php
 
-$guid = get_input('guid');
-$container_guid = get_input('container_guid');
+$guid = (int) get_input('guid');
+$container_guid = (int) get_input('container_guid');
 
 $container = get_entity($container_guid);
 
 if (!$container instanceof \Tour\Page) {
-	register_error(elgg_echo('tour:error:page_not_found'));
-	forward(REFERER);
+	return elgg_error_response(elgg_echo('tour:error:page_not_found'));
 }
 
 if (!$container->canEdit()) {
-	register_error(elgg_echo('tour:error:unauthorized'));
-	forward(REFERER);
+	return elgg_error_response(elgg_echo('tour:error:unauthorized'));
 }
 
 if ($guid) {
 	$entity = get_entity($guid);
 
 	if (!$entity instanceof \Tour\Stop) {
-		register_error(elgg_echo('tour:error:stop_not_found'));
-		forward(REFERER);
+		return elgg_error_response(elgg_echo('tour:error:stop_not_found'));
 	}
 
 	if (!$entity->canEdit()) {
-		register_error(elgg_echo('tour:error:unauthorized'));
-		forward(REFERER);
+		return elgg_error_response(elgg_echo('tour:error:unauthorized'));
 	}
 } else {
 	$site = elgg_get_site_entity();
 
-	$entity = new \Tour\Stop;
+	$entity = new \Tour\Stop();
 	$entity->owner_guid = $site->guid;
 	$entity->order = 999;
 }
@@ -43,9 +39,9 @@ $entity->placement = get_input('placement');
 $entity->access_id = $container->access_id;
 
 if (!$entity->save()) {
-	register_error(elgg_echo('tour:action:save:error'));
-	forward(REFERER);
+	return elgg_error_response(elgg_echo('tour:action:save:error'));
 }
 
-system_message(elgg_echo('tour:action:save:success'));
-forward($container->getURL());
+$forward = elgg_normalize_url("admin/administer_utilities/tour/view?guid={$container->guid}");
+
+return elgg_ok_response('', elgg_echo('tour:action:save:success'), $forward);

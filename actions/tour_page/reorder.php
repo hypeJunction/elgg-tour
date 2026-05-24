@@ -1,14 +1,16 @@
 <?php
 
-$guid = get_input('guid');
-$stop_guids = get_input('guids');
+$guid = (int) get_input('guid');
+$stop_guids = (array) get_input('guids', []);
 
-$entities = new ElggBatch('elgg_get_entities', array(
+/* @var $entities \ElggBatch */
+$entities = elgg_get_entities([
 	'type' => 'object',
 	'subtype' => \Tour\Stop::SUBTYPE,
 	'container_guid' => $guid,
 	'limit' => false,
-));
+	'batch' => true,
+]);
 
 $count = 0;
 foreach ($entities as $entity) {
@@ -20,5 +22,4 @@ foreach ($entities as $entity) {
 	}
 }
 
-system_message(elgg_echo('tour:action:reorder:success', array($count)));
-forward(REFERER);
+return elgg_ok_response('', elgg_echo('tour:action:reorder:success', [$count]));

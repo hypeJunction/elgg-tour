@@ -31,16 +31,15 @@ $tour = new stdClass();
 $tour->id = 'hopscotch-tour'; // TODO Why is does Hopscotch require this?
 
 // Internationalization
-$tour->i18n = array(
+$tour->i18n = [
 	'nextBtn' => elgg_echo('next'),
 	'prevBtn' => elgg_echo('previous'),
 	'doneBtn' => elgg_echo('done'),
 	'closeTooltip' => elgg_echo('close'),
-);
+];
 
-$tour->steps = array();
+$tour->steps = [];
 foreach ($entities as $entity) {
-
 	$title_key = "tour:title:{$entity->guid}";
 	$content_key = "tour:body:{$entity->guid}";
 
@@ -59,9 +58,9 @@ foreach ($entities as $entity) {
 	$stop = new stdClass();
 	$stop->title = $title;
 	$stop->target = $entity->target;
-	$stop->content = elgg_view('output/longtext', array(
+	$stop->content = elgg_view('output/longtext', [
 		'value' => $content,
-	));
+	]);
 	$stop->placement = $entity->placement;
 
 	$tour->steps[] = $stop;

@@ -5,13 +5,16 @@ namespace Tour;
 use ElggObject;
 
 /**
- *
+ * Tour page entity — groups a collection of tour stops for a specific URL.
  */
 class Page extends ElggObject {
+
 	const SUBTYPE = 'tour_page';
 
 	/**
-	 * Set subtype
+	 * {@inheritDoc}
+	 *
+	 * @return void
 	 */
 	protected function initializeAttributes() {
 		parent::initializeAttributes();
@@ -20,7 +23,7 @@ class Page extends ElggObject {
 	}
 
 	/**
-	 * Get URL of the tour page
+	 * Get URL of the tour page.
 	 *
 	 * @return string
 	 */

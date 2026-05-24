@@ -2,8 +2,8 @@
  * Draggable info text reordering
  */
 define(function(require) {
-    var elgg = require("elgg");
-    var $ = require("jquery");
+	var elgg = require("elgg");
+	var $ = require("jquery");
 	var guid = elgg.get_page_owner_guid();
 
 	/**

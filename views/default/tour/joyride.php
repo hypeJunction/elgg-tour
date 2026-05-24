@@ -37,15 +37,15 @@ foreach ($entities as $entity) {
 		$content = $entity->description;
 	}
 
-	$description = elgg_view('output/longtext', array(
+	$description = elgg_view('output/longtext', [
 		'value' => $content,
-	));
+	]);
 
 	$stops .= elgg_format_element('li',
-		array(
+		[
 			"data-$type" => $target,
 			'data-options' => "tipLocation: {$entity->placement};",
-		),
+		],
 		"<h3>{$title}</h3>{$description}"
 	);
 }

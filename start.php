@@ -1,84 +1,56 @@
 <?php
 /**
- * Plugin for managing and displaying feature tours
+ * Plugin for managing and displaying feature tours.
+ *
+ * Static routes, entities, actions, and hooks live in elgg-plugin.php.
+ * start.php only registers items that depend on plugin settings
+ * (the choice between Hopscotch and Joyride is admin-configurable).
  */
 
-elgg_register_event_handler('init', 'system', 'tour_init');
+return function () {
+	elgg_register_event_handler('init', 'system', 'tour_init');
+};
 
 /**
- * Initialize the plugin.
+ * Register the admin-selectable tour library, theme extensions, and menu items.
+ *
+ * @return void
  */
 function tour_init() {
 	$js_lib = elgg_get_plugin_setting('js_library', 'tour');
 
-	if ($js_lib == 'joyride') {
+	if ($js_lib === 'joyride') {
 		elgg_register_css('joyride', '/mod/tour/vendors/joyride/joyride-2.1.css');
 		elgg_load_css('joyride');
 
-		elgg_define_js('joyride', array(
+		elgg_define_js('joyride', [
 			'src' => '/mod/tour/vendors/joyride/jquery.joyride-2.1.js',
 			'exports' => 'joyride',
-		));
+		]);
 	} else {
 		elgg_register_css('hopscotch', '/mod/tour/vendors/hopscotch/css/hopscotch.min.css');
 		elgg_load_css('hopscotch');
 
-		elgg_define_js('hopscotch', array(
+		elgg_define_js('hopscotch', [
 			'src' => '/mod/tour/vendors/hopscotch/hopscotch.min.js',
 			'exports' => 'hopscotch',
-		));
+		]);
 	}
 
 	elgg_require_js('elgg/tour/display');
 
-	elgg_extend_view('page/elements/footer', 'tour/outline');
-
-	elgg_extend_view('css/elgg', 'css/tour');
-	elgg_extend_view('css/admin', 'css/tour_admin');
-
-	elgg_register_action('tour_page/save', __DIR__ . '/actions/tour_page/save.php', 'admin');
-	elgg_register_action('tour_page/reorder', __DIR__ . '/actions/tour_page/reorder.php', 'admin');
-	elgg_register_action('tour_page/delete', __DIR__ . '/actions/tour_page/delete.php', 'admin');
-	elgg_register_action('tour_stop/save', __DIR__ . '/actions/tour_stop/save.php', 'admin');
-	elgg_register_action('tour_stop/delete', __DIR__ . '/actions/tour_stop/delete.php', 'admin');
-
-	elgg_register_route('tour', ['path' => '/tour/{segments}', 'resource' => 'tour', 'requirements' => ['segments' => '.+'], 'defaults' => ['segments' => '']]);
-	elgg_register_route('tour_stop', ['path' => '/tour_stop/{segments}', 'resource' => 'tour_stop', 'requirements' => ['segments' => '.+'], 'defaults' => ['segments' => '']]); // For convenience
+	elgg_extend_view('elgg.css', 'css/tour');
+	elgg_extend_view('admin.css', 'css/tour_admin');
 
 	elgg_register_admin_menu_item('administer', 'tour', 'administer_utilities');
 
-	elgg_register_menu_item('topbar', array(
+	elgg_register_menu_item('topbar', [
 		'name' => 'tour',
-		'href' => '',
+		'href' => '#',
 		'text' => elgg_echo('tour:start'),
 		'id' => 'tour-start',
 		'section' => 'alt',
+		'link_class' => 'elgg-topbar-dropdown-link',
 		'data-library' => $js_lib,
-	));
-
-	elgg_register_plugin_hook_handler('register', 'menu:entity', array('Tour\Page\EntityMenu', 'setUp'));
-	elgg_register_plugin_hook_handler('register', 'menu:entity', array('Tour\Stop\EntityMenu', 'setUp'));
-}
-
-/**
- * Tour page handler
- *
- * @param array $page
- */
-function tour_page_handler($page) {
-
-	switch ($page[0]) {
-		case 'data':
-			echo elgg_view('tour/data');
-			break;
-		case 'edit':
-			set_input('guid', $page[1]);
-			echo elgg_view('resources/tour/edit');
-			break;
-		case 'add':
-			echo elgg_view('resources/tour/add');
-			break;
-	}
-
-	return true;
+	]);
 }

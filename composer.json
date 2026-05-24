@@ -1,7 +1,7 @@
 {
-	"name": "juho-jaakkola/elgg-tour",
+	"name": "hypejunction/tour",
+	"description": "Manage and display feature tours powered by Hopscotch or Joyride",
 	"type": "elgg-plugin",
-	"description": "Manage and display feature tours",
 	"keywords": [
 		"elgg",
 		"plugin",
@@ -9,14 +9,36 @@
 		"joyride",
 		"hopscotch"
 	],
-	"license": "GPL-2.0",
+	"license": "GPL-2.0-or-later",
 	"authors": [
 		{
 			"name": "Juho Jaakkola",
 			"email": "juho@elgg.org"
+		},
+		{
+			"name": "Ismayil Khayredinov",
+			"email": "ismayil.khayredinov@gmail.com"
 		}
 	],
+	"require": {
+		"php": ">=7.2",
+		"elgg/elgg": "^3.0",
+		"composer/installers": "~1.0"
+	},
+	"autoload": {
+		"psr-4": {
+			"Tour\\": "classes/Tour/"
+		}
+	},
 	"extra": {
-		"installer-name": "tour"
+		"installer-name": "tour",
+		"elgg-plugin": {
+			"id": "tour"
+		}
+	},
+	"config": {
+		"allow-plugins": {
+			"composer/installers": true
+		}
 	}
 }

@@ -15,8 +15,11 @@ return array(
 	'skip' => 'Skip',
 
 	'tour:error:page_not_found' => 'The selected page is missing or invalid',
+	'tour:error:stop_not_found' => 'The selected tour stop is missing or invalid',
+	'tour:error:unauthorized' => 'You are not authorized to perform this action',
 
 	'tour:action:save:success' => 'Tour stop saved',
+	'tour:action:save:error' => 'Failed to save the item',
 	'tour:action:reorder:success' => 'Reordered %s items',
 	'tour:action:delete:success' => 'Deleted',
 	'tour:action:delete:error' => 'Failed to delete the item',

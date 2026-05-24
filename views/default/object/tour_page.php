@@ -2,31 +2,28 @@
 
 $entity = elgg_extract('entity', $vars);
 
-$metadata = elgg_view_menu('entity', array(
+$metadata = elgg_view_menu('entity', [
 	'entity' => $vars['entity'],
 	'handler' => 'tour_page',
 	'sort_by' => 'priority',
 	'class' => 'elgg-menu-hz',
-));
+]);
 
-$content = <<<HTML
-	<ul>
-		<li>Page: {$entity->page}</li>
-	</ul>
-HTML;
+$page = htmlspecialchars((string) $entity->page, ENT_QUOTES, 'UTF-8');
+$content = "<ul><li>Page: {$page}</li></ul>";
 
-$title = elgg_view('output/url', array(
+$title = elgg_view('output/url', [
 	'text' => $entity->title,
 	'href' => $entity->getURL(),
-));
+]);
 
-$params = array(
+$params = [
 	'entity' => $entity,
 	'title' => $title,
 	'subtitle' => $content,
 	'metadata' => $metadata,
 	'content' => $entity->description,
-);
+];
 $params = $params + $vars;
 $list_body = elgg_view('object/elements/summary', $params);
 

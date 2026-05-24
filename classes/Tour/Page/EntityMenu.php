@@ -2,42 +2,48 @@
 
 namespace Tour\Page;
 
-use ElggMenuItem;
+use Elgg\Hook;
 
+/**
+ * Trims and tweaks the entity menu for Tour\Page objects.
+ */
 class EntityMenu {
-	/**
-	 * Set up entity menu for tour_stop objects
-	 *
-	 * @param string $hook   'register'
-	 * @param string $type   'menu:entity'
-	 * @param array  $menu   Array of ElggMenuItem objects
-	 * @param array  $params Menu parameter
-	 * @return array $menu   Array of ElggMenuItem objects
-	 */
-	public static function setUp($hook, $type, $menu, $params) {
-		$handler = elgg_extract('handler', $params);
 
-		if (\Tour\Page::SUBTYPE != $handler) {
-			return $menu;
+	/**
+	 * Set up entity menu for tour_page objects.
+	 *
+	 * Keeps only access/edit/delete items and rewrites the edit link to
+	 * the admin tour editor.
+	 *
+	 * @param \Elgg\Hook $hook 'register' on 'menu:entity'
+	 *
+	 * @return \Elgg\Menu\MenuItems|array|null
+	 */
+	public static function setUp(Hook $hook) {
+		$entity = $hook->getEntityParam();
+		if (!$entity instanceof \Tour\Page) {
+			return null;
 		}
 
-		$entity = $params['entity'];
+		$return = $hook->getValue();
+		$allowed = ['access', 'edit', 'delete'];
 
-		$allowed = array('access', 'edit', 'delete');
+		foreach ($return as $key => $item) {
+			if (!in_array($item->getName(), $allowed, true)) {
+				if (is_object($return) && method_exists($return, 'remove')) {
+					$return->remove($item->getName());
+				} else {
+					unset($return[$key]);
+				}
 
-		foreach ($menu as $key => $item) {
-			// Remove all unnecessary menu items
-			if (!in_array($item->getName(), $allowed)) {
-				unset($menu[$key]);
 				continue;
 			}
 
-			// Set custom URL for editing page
 			if ($item->getName() === 'edit') {
 				$item->setHref("admin/administer_utilities/tour/edit?guid={$entity->guid}");
 			}
 		}
 
-		return $menu;
+		return $return;
 	}
 }

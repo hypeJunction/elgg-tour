@@ -1,23 +1,18 @@
 <?php
 
-$guid = get_input('guid');
-
+$guid = (int) get_input('guid');
 $entity = get_entity($guid);
 
 if (!$entity instanceof \Tour\Stop) {
-	register_error(elgg_echo('tour:not_found'));
-	forward(REFERER);
+	return elgg_error_response(elgg_echo('tour:error:stop_not_found'));
 }
 
 if (!$entity->canEdit()) {
-	register_error(elgg_echo('actionunaurhorized'));
-	forward(REFERER);
+	return elgg_error_response(elgg_echo('actionunauthorized'));
 }
 
-if ($entity->delete()) {
-	system_message(elgg_echo('tour:action:delete:success'));
-} else {
-	register_error(elgg_echo('tour:action:delete:error'));
+if (!$entity->delete()) {
+	return elgg_error_response(elgg_echo('tour:action:delete:error'));
 }
 
-forward(REFERER);
+return elgg_ok_response('', elgg_echo('tour:action:delete:success'));
