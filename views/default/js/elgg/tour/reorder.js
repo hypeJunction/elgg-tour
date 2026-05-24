@@ -4,6 +4,7 @@
 define(function(require) {
 	var elgg = require("elgg");
 	var $ = require("jquery");
+	require("jquery-ui/widgets/sortable");
 	var guid = elgg.get_page_owner_guid();
 
 	/**

@@ -7,20 +7,29 @@
 return [
 	'plugin' => [
 		'name' => 'Tour',
-		'version' => '3.0.0',
+		'version' => '4.0.0',
 	],
+	'bootstrap' => 'Tour\\Bootstrap',
 	'entities' => [
 		[
 			'type' => 'object',
 			'subtype' => 'tour_page',
 			'class' => 'Tour\\Page',
-			'searchable' => false,
+			'capabilities' => [
+				'searchable' => false,
+				'commentable' => false,
+				'likable' => false,
+			],
 		],
 		[
 			'type' => 'object',
 			'subtype' => 'tour_stop',
 			'class' => 'Tour\\Stop',
-			'searchable' => false,
+			'capabilities' => [
+				'searchable' => false,
+				'commentable' => false,
+				'likable' => false,
+			],
 		],
 	],
 	'actions' => [
@@ -57,9 +66,15 @@ return [
 			],
 		],
 	],
-    'cli' => [
-        'commands' => [
-            \Tour\Cli\DoctorCommand::class,
-        ],
-    ],
+	'view_extensions' => [
+		'elgg.css' => [
+			'css/tour' => [],
+		],
+		'admin.css' => [
+			'css/tour_admin' => [],
+		],
+	],
+	'cli_commands' => [
+		'Tour\\Cli\\DoctorCommand',
+	],
 ];

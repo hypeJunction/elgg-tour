@@ -5,8 +5,7 @@ $guid = get_input('guid');
 $entity = get_entity($guid);
 
 if (!$entity instanceof \Tour\Page) {
-	register_error(elgg_echo('tour:error:page_not_found'));
-	forward(REFERER);
+	throw new \Elgg\Exceptions\Http\EntityNotFoundException(elgg_echo('tour:error:page_not_found'));
 }
 
 $form_helper = new \Tour\Page\Form;
