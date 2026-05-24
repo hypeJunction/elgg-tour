@@ -1,9 +1,9 @@
-# Tour — Architecture (Elgg 6.x)
+# Tour — Architecture (Elgg 7.x)
 
 ## Summary
 
 **Name**: Tour
-**Version**: 6.0.0 — migrated to Elgg 6.x on 2026-05-24 (from 5.x)
+**Version**: 7.0.0 — migrated to Elgg 7.x on 2026-05-24 (from 6.x)
 **Purpose**: Manage and display in-app feature tours for Elgg sites.
 
 A site admin defines per-URL tour pages (`Tour\Page`) and a list of
@@ -18,7 +18,7 @@ overlay using stop metadata fetched from the `/tour/data` AJAX endpoint.
 tour/
 ├── elgg-plugin.php                   # Declarative entities/actions/routes/events/cli_commands
 ├── composer.json                     # Sole plugin metadata (4.x+ — no manifest.xml)
-├── docker/                           # elgg6 Docker infra (per Iron Law 12)
+├── docker/                           # elgg7 Docker infra (per Iron Law 12)
 ├── classes/
 │   └── Tour/
 │       ├── Bootstrap.php             # extends DefaultPluginBootstrap; runtime settings-dependent regs + Seeder wiring
@@ -191,10 +191,12 @@ or jQuery `.joyride(...)`).
   via `class_exists` guards but does not require this plugin.
 
 ### Composer
-- `php >=8.2`
-- `elgg/elgg ~6.1.0`
+- `php >=8.3`
+- `elgg/elgg ~7.0.0`
 - `composer/installers ^2.0`
-- `ext-intl *` (required by Elgg 6.x)
+- `ext-intl *` (required by Elgg 7.x)
+- `minimum-stability: dev` + `prefer-stable: true` (rule 023-composer-stability)
+- `repositories[]: https://asset-packagist.org` (rule 023-composer-stability)
 
 ### Vendored libraries (do not modify)
 - `vendors/hopscotch/` — Hopscotch tour library
@@ -210,13 +212,121 @@ This plugin owns the following entity types and ships a `Seeder` subclass
 
 **Seed dev/QA data:**
 ```bash
-php elgg-cli database:seed --type=tour --limit=10
-php elgg-cli database:unseed --type=tour
+php vendor/bin/elgg-cli database:seed --type=tour --limit=10
+php vendor/bin/elgg-cli database:unseed --type=tour
 ```
 
-Verified end-to-end on Elgg 6.x: both `seed` and `unseed` run cleanly.
+Verified end-to-end on Elgg 7.x: both `seed` and `unseed` run cleanly.
 
 ## Migration Notes
+
+### 6.x → 7.x on 2026-05-24
+
+**Automated rules applied** (`skills/elgg-migrate/rules/6x-to-7x`):
+- `composer-stability-settings-7x`: APPLIED — added
+  `minimum-stability: dev`, `prefer-stable: true`, and the asset-packagist
+  repository entry to `composer.json` (rule 023).
+- `reset-system-cache-7x`: SKIP — no `elgg_reset_system_cache()` calls.
+- `add-docblocks`: SKIP — all functions/methods/properties already carry
+  docblocks (carried forward from 5.x pass).
+
+**LLM-guided rules surveyed — no matches in this plugin:**
+- `001-elggobject-abstract` — plugin already uses `Tour\Page` /
+  `Tour\Stop` subclasses, no raw `new ElggObject()`.
+- `002-css-crush-removed` — no `$(varname)` CSS Crush syntax in views.
+- `003-cache-backends-removed` — no Redis/Memcached config.
+- `004-mailer-laminas-to-symfony` — no email send paths.
+- `005-font-awesome-v7` — only icon used is `drag-arrow` via
+  `elgg_view_icon('drag-arrow')`, which resolves to
+  `<span class="elgg-icon elgg-icon-drag-arrow">`. The
+  `reorder.mjs` sortable selector targets the same span — works
+  regardless of FA glyph mapping.
+- `006-notification-handler-renames` — no notification handlers.
+- `007-form-action-renames` — uses plugin-owned `tour_page/*` and
+  `tour_stop/*` paths; not affected by `blog/save→edit` style renames.
+- `008-response-event-changes` — no `ajax_response` / `forward` handlers.
+- `009-button-classes-removed` — no `elgg-button-special` or
+  `elgg-button-action-done` usage.
+- `010-group-route-changes` — no group-collection URL generation.
+- `011-action-renames` — no `flush_cache` references.
+- `012-members-route-renames` — no `collection:user:user` references.
+- `013-messages-parameter-rename` — no messages integration.
+- `014-external-pages-rewrite` — no expages integration.
+- `015-min-password-length` — no password validation.
+- `016-phpunit-12` — no PHPUnit suite present (gap carried forward).
+- `017-river-emittable-capability` — entities deliberately exclude
+  river (`searchable=false, commentable=false, likable=false`).
+- `018-entity-listing-limit-clamped` — admin views call
+  `elgg_list_entities` with internal options (no URL-supplied limit).
+- `019-ckeditor-v47` — no CKEditor customisation.
+- `020-likes-visibility` — likes disabled on both entity types.
+- `021-webservices-changes` — no web services exposed.
+- `024-grid-css-extension-target` — only extends `elgg.css` and
+  `admin.css`, not `elements/grid`.
+
+**LLM-guided rewrites actually performed:**
+- `composer.json`: bumped `php` `>=8.2` → `>=8.3`, `elgg/elgg`
+  `~6.1.0` → `~7.0.0`. `ext-intl *` already present and remains valid.
+- `elgg-plugin.php`: bumped plugin version `6.0.0` → `7.0.0`. No other
+  changes — the declarative shape (entities / actions / routes /
+  events / view_extensions / cli_commands) is compatible across 6.x
+  and 7.x. The `events.register.menu:entity` block already uses the
+  7.x-compatible `'FQCN::method' => spec` keyed shape (no legacy
+  `[['handler' => ...]]` shape was ever introduced in this plugin).
+- `Tour\Bootstrap::init()`: no changes. `elgg_register_external_file()`
+  now returns `void` in 7.x, but the plugin never consumed the return
+  value; calls remain valid as-is.
+
+**Docker infra**:
+- Replaced `docker/` template files with `infra/elgg7/` equivalents
+  (Dockerfile, docker-compose.yml, elgg-composer.json,
+  elgg-install.sh, .env.example, index.php) per Iron Law 12.
+
+**Data preservation**:
+- Subtype string constants `tour_page` and `tour_stop` are unchanged.
+- Entity class refs in `elgg-plugin.php` remain string literals (no
+  `::class` / `::SUBTYPE`).
+- No `Elgg\Upgrade\Batch` script needed (no schema or data shape change).
+
+**Test results** (Elgg 7.x Docker stack via `verify-fleet
+--version=elgg7 --only=tour --require-branch=migrate/elgg-7.x`):
+- Plugin activation: PASS (first try)
+- `elgg-migrate-verify` gates:
+  - PHP syntax (excl. vendor/tests): PASS
+  - Homepage renders (15360 bytes): PASS
+  - Login page renders (15455 bytes): PASS
+  - No PHP Fatal/Error in Apache log: PASS
+  - PHP_CodeSniffer (Elgg standard): PASS (0 errors)
+  - PHPUnit: SKIP (no suite — same documented gap as earlier versions)
+- `--verify` (PostMigrationVerifier, target 7.x): PASS (no version
+  boundary violations — no 8.x leakage)
+- `--security` (SecuritySweep): PASS (0 findings)
+- `tour:doctor` CLI: runs cleanly on activated plugin
+  (`tour:doctor complete — no issues found`)
+- Seeder end-to-end: `database:seed --type=tour --limit=2` and
+  `database:unseed --type=tour` both PASS
+
+**Iron Laws status**:
+1. Single-step (6.x -> 7.x only): OK
+2. Branch `migrate/elgg-7.x`: OK
+3. Verified in Docker: OK
+4. Pre-migration tests: SKIP (legacy plugin, no PHPUnit baseline; gap
+   carried forward from prior versions — `tests/playwright/` and
+   `tests/vitest/` directories present but empty)
+5. No closures in elgg-plugin.php: OK (Bootstrap class holds runtime regs)
+6. Directory name matches composer name: OK (`tour` == `hypejunction/tour`)
+7. Only 7.x APIs (no 8.x leakage; `elgg_register_external_file()` void
+   return assumed; no `'restorable'` opt-in — entities are admin-only,
+   trash UI is not relevant for them): OK
+8. Security sweep clean: OK (0 findings)
+9. ARCHITECTURE.md updated: OK
+10. PHPCS Elgg standard: OK (0 errors)
+11. Composer constraints per table: OK (`~7.0.0`, `>=8.3`,
+    `ext-intl`, plus 7.x stability settings)
+12. Docker infra under `docker/` is elgg7 template: OK
+13. Branch based on `migrate/elgg-6.x`: OK
+
+### 5.x → 6.x on 2026-05-24
 
 ### 5.x → 6.x on 2026-05-24
 
@@ -312,19 +422,32 @@ Verified end-to-end on Elgg 6.x: both `seed` and `unseed` run cleanly.
 
 ## For Future Migrations
 
-### 6.x → 7.x checklist
-- [ ] Add `'restorable' => true` to entity capabilities for trash/soft-delete
-- [ ] Audit any `elgg_register_external_file` usage — signature now returns void in 7.x
-- [ ] Bump composer `php` to `>=8.3`, `elgg/elgg` to `~7.0.0`
-- [ ] Consider replacing Joyride/Hopscotch with a modern lightweight
-      alternative (driver.js, shepherd.js — tracked under epic
-      `elgg-migrate-4yai3`; shepherd.js chosen). Will retire the
-      vendored jquery-1.10.1 baggage from joyride.
+### Next step: JS rework (joyride → shepherd.js) — bead `elgg-migrate-4yai3`
+This is the next blocker on epic `83zi2`. The PHP layer is fully on 7.x
+and behaves correctly today; the work below replaces the vendored
+joyride / hopscotch shims with a modern tour library:
+- [ ] Replace `vendors/joyride/` and `vendors/hopscotch/` with
+      `shepherd.js` (MIT, ESM-first, closest joyride API mapping).
+- [ ] Drop `js_library` plugin setting + the Hopscotch/Joyride branch
+      in `Tour\Bootstrap::init()`. Replace the two
+      `elgg_register_external_file('js', 'tour.{joyride,hopscotch}', ...)`
+      blocks with a single ESM import of shepherd in `display.mjs`.
+- [ ] Rewrite `views/default/tour/{hopscotch,joyride}.php` and
+      `resources/tour/data.php` to emit the shepherd JSON shape.
+- [ ] Retire the vendored jquery-1.10.1 baggage from joyride.
+
+### 7.x → 8.x checklist (placeholder)
+- [ ] Confirm `elgg_register_external_file()` signature still void
+- [ ] Re-audit `'restorable'` capability (still not relevant for
+      admin-only tour_page / tour_stop, but worth re-checking)
+- [ ] Re-run `composer-stability-settings` rule (likely still required)
 
 ### Known issues / debt
 - Plugin has zero automated test coverage. Both PHPUnit fixtures (entity
   CRUD, action contracts) and Playwright end-to-end (admin flow, tour
-  overlay rendering) should be added before the next major step.
+  overlay rendering) should be added before further work. The
+  `4yai3` JS rework is the natural moment to introduce Playwright
+  coverage of the actual tour overlay rendering.
 - Vendored joyride library bundles its own `jquery-1.10.1.js` with
   deprecated jQuery 3.x APIs. Replacement by shepherd.js (per epic
   `4yai3`) will retire this debt.
