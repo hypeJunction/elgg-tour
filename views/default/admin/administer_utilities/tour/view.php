@@ -3,7 +3,7 @@
  * Displays all tour_stops within a single tour
  */
 
-elgg_require_js('elgg/tour/reorder');
+elgg_import_esm('elgg/tour/reorder');
 
 $guid = get_input('guid');
 
