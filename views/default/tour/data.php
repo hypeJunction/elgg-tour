@@ -8,7 +8,7 @@
 
 $page = get_input('page');
 
-$pages = elgg_get_entities_from_metadata(array(
+$pages = elgg_get_entities(array(
 	'type' => 'object',
 	'subtype' => \Tour\Page::SUBTYPE,
 	'metadata_name_value_pairs' => array(
@@ -25,7 +25,7 @@ $stops = array();
 if ($pages) {
 	$page_guid = $pages[0]->guid;
 
-	$stops = elgg_get_entities_from_metadata(array(
+	$stops = elgg_get_entities(array(
 		'type' => 'object',
 		'subtype' => \Tour\Stop::SUBTYPE,
 		'container_guid' => $page_guid,

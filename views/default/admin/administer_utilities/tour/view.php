@@ -27,7 +27,7 @@ echo elgg_view('output/longtext', array(
 	'class' => 'mvl',
 ));
 
-echo elgg_list_entities_from_metadata(array(
+echo elgg_list_entities(array(
 	'type' => 'object',
 	'subtype' => \Tour\Stop::SUBTYPE,
 	'container_guid' => $guid,

@@ -30,9 +30,6 @@ function tour_init() {
 	}
 
 	elgg_require_js('elgg/tour/display');
-	//elgg_require_js('elgg/tour/edit');
-
-	elgg_register_ajax_view('ajax/tour_stop/save');
 
 	elgg_extend_view('page/elements/footer', 'tour/outline');
 
@@ -45,8 +42,8 @@ function tour_init() {
 	elgg_register_action('tour_stop/save', __DIR__ . '/actions/tour_stop/save.php', 'admin');
 	elgg_register_action('tour_stop/delete', __DIR__ . '/actions/tour_stop/delete.php', 'admin');
 
-	elgg_register_page_handler('tour', 'tour_page_handler');
-	elgg_register_page_handler('tour_stop', 'tour_page_handler'); // For convenience
+	elgg_register_route('tour', ['path' => '/tour/{segments}', 'resource' => 'tour', 'requirements' => ['segments' => '.+'], 'defaults' => ['segments' => '']]);
+	elgg_register_route('tour_stop', ['path' => '/tour_stop/{segments}', 'resource' => 'tour_stop', 'requirements' => ['segments' => '.+'], 'defaults' => ['segments' => '']]); // For convenience
 
 	elgg_register_admin_menu_item('administer', 'tour', 'administer_utilities');
 
@@ -61,8 +58,6 @@ function tour_init() {
 
 	elgg_register_plugin_hook_handler('register', 'menu:entity', array('Tour\Page\EntityMenu', 'setUp'));
 	elgg_register_plugin_hook_handler('register', 'menu:entity', array('Tour\Stop\EntityMenu', 'setUp'));
-
-	elgg_register_viewtype('json');
 }
 
 /**
