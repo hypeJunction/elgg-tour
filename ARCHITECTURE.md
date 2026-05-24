@@ -1,9 +1,9 @@
-# Tour — Architecture (Elgg 4.x)
+# Tour — Architecture (Elgg 5.x)
 
 ## Summary
 
 **Name**: Tour
-**Version**: 4.0.0 — migrated to Elgg 4.x on 2026-05-24 (from 3.x)
+**Version**: 5.0.0 — migrated to Elgg 5.x on 2026-05-24 (from 4.x)
 **Purpose**: Manage and display in-app feature tours for Elgg sites.
 
 A site admin defines per-URL tour pages (`Tour\Page`) and a list of
@@ -16,21 +16,24 @@ overlay using stop metadata fetched from the `/tour/data` AJAX endpoint.
 
 ```
 tour/
-├── elgg-plugin.php                   # Declarative entities/actions/routes/hooks/cli_commands
-├── composer.json                     # Sole plugin metadata in 4.x (manifest.xml deleted)
-├── docker/                           # elgg4 Docker infra (per Iron Law 12)
+├── elgg-plugin.php                   # Declarative entities/actions/routes/events/cli_commands
+├── composer.json                     # Sole plugin metadata (4.x+ — no manifest.xml)
+├── docker/                           # elgg5 Docker infra (per Iron Law 12)
 ├── classes/
 │   └── Tour/
-│       ├── Bootstrap.php             # extends DefaultPluginBootstrap; runtime settings-dependent regs
-│       ├── Page.php                  # ElggObject subtype 'tour_page'
+│       ├── Bootstrap.php             # extends DefaultPluginBootstrap; runtime settings-dependent regs + Seeder wiring
+│       ├── Page.php                  # ElggObject subtype 'tour_page'; getURL(): string
 │       ├── Stop.php                  # ElggObject subtype 'tour_stop'
 │       ├── Cli/
 │       │   └── DoctorCommand.php     # `tour:doctor` post-migration integrity check
+│       ├── Database/
+│       │   └── Seeds/
+│       │       └── Seeder.php        # \Elgg\Database\Seeds\Seed subclass for tour_page + tour_stop
 │       ├── Page/
-│       │   ├── EntityMenu.php        # menu:entity register hook
+│       │   ├── EntityMenu.php        # menu:entity register event (\Elgg\Event)
 │       │   └── Form.php              # tour_page/save form vars
 │       └── Stop/
-│           ├── EntityMenu.php        # menu:entity register hook
+│           ├── EntityMenu.php        # menu:entity register event (\Elgg\Event)
 │           └── Form.php              # tour_stop/save form vars
 ├── actions/
 │   ├── tour_page/
@@ -70,7 +73,7 @@ Subtype constants live on the entity classes (`Tour\Page::SUBTYPE`,
 `Tour\Stop::SUBTYPE`) and were preserved across migration — no DB
 migration needed.
 
-Per Iron Law / cross-plugin learning: the `class` entry in elgg-plugin.php
+Per cross-plugin learning: the `class` entry in elgg-plugin.php
 remains a **string literal** (`'Tour\\Page'`), not `\Tour\Page::class` or
 `\Tour\Page::SUBTYPE`. elgg-plugin.php is parsed during plugin discovery,
 before the plugin's `classes/` PSR-4 autoloader is wired in.
@@ -79,14 +82,15 @@ before the plugin's `classes/` PSR-4 autoloader is wired in.
 
 `Tour\Bootstrap` extends `\Elgg\DefaultPluginBootstrap` and implements
 `init()` to register the runtime, settings-dependent items that cannot
-live in the declarative `elgg-plugin.php` config:
+live in the declarative `elgg-plugin.php` config, plus the Seeder wiring:
 
 | Registration | Why it cannot be declarative |
 |--------------|------------------------------|
 | `elgg_register_external_file('css', ...)` for joyride **or** hopscotch CSS | Choice depends on `js_library` plugin setting at request time |
-| `elgg_define_js('joyride'|'hopscotch', ...)` | Same — admin-selectable JS library |
+| `elgg_define_js('joyride'\|'hopscotch', ...)` | Same — admin-selectable JS library |
 | `elgg_require_js('elgg/tour/display')` | Loaded site-wide so the topbar link works on every page |
 | `elgg_register_menu_item('topbar', ['name' => 'tour', ..., 'data-library' => $js_lib])` | Menu item carries the currently-selected library as a data attribute consumed by the JS module |
+| `elgg_register_event_handler('seeds', 'database', [Seeder::class, 'addSeed'])` | Required: Seed subclasses are exposed via the `seeds` event; the closure-free `'events'` key cannot hold static method refs that reference plugin classes from `elgg-plugin.php` |
 
 ## Routes
 
@@ -97,18 +101,24 @@ live in the declarative `elgg-plugin.php` config:
 The admin UI (`admin/administer_utilities/tour/...`) is provided by
 core's admin context handler — not via plugin-owned routes.
 
-## Hooks
+## Events
+
+In Elgg 5.x, hooks and events merged into a single `'events'` key with
+`\Elgg\Event` callbacks. Declarative event handlers:
 
 | Event | Type | Handler | Purpose |
 |-------|------|---------|---------|
 | `register` | `menu:entity` | `Tour\Page\EntityMenu::setUp` | Keep only access/edit/delete on `Tour\Page`; rewrite edit href |
 | `register` | `menu:entity` | `Tour\Stop\EntityMenu::setUp` | Keep only access/edit/delete on `Tour\Stop`; rewrite edit href |
 
-Both handlers use the 4.x `\Elgg\Hook` single-arg signature and handle
+Both handlers use the 5.x `\Elgg\Event` single-arg signature and handle
 both array and `Elgg\Menu\MenuItems` return shapes.
 
-Note (Iron Law 7): in 4.x this stays as `'hooks'` and `\Elgg\Hook`. The
-unification under `'events'` / `\Elgg\Event` happens in the 4.x → 5.x step.
+Runtime registration in Bootstrap:
+
+| Event | Type | Handler | Purpose |
+|-------|------|---------|---------|
+| `seeds` | `database` | `Tour\Database\Seeds\Seeder::addSeed` | Append `Seeder::class` to the database seeds list |
 
 ## Actions
 
@@ -120,9 +130,9 @@ unification under `'events'` / `\Elgg\Event` happens in the 4.x → 5.x step.
 | `tour_stop/save` | `actions/tour_stop/save.php` | admin | Create or update a tour stop |
 | `tour_stop/delete` | `actions/tour_stop/delete.php` | admin | Delete a tour stop |
 
-All actions return `elgg_ok_response()` / `elgg_error_response()`
-(4.x action contract). No leftover `forward()` calls — admin edit views
-that previously used `forward(REFERER)` now `throw \Elgg\Exceptions\Http\EntityNotFoundException`.
+All actions return `elgg_ok_response()` / `elgg_error_response()`. No
+leftover `forward()` calls — admin edit views that previously used
+`forward(REFERER)` throw `\Elgg\Exceptions\Http\EntityNotFoundException`.
 
 ## CLI
 
@@ -130,8 +140,7 @@ that previously used `forward(REFERER)` now `throw \Elgg\Exceptions\Http\EntityN
 |---------|-------|---------|
 | `tour:doctor` | `Tour\Cli\DoctorCommand` | Post-migration integrity check — counts `tour_page` / `tour_stop` entities |
 
-Registered via the top-level `'cli_commands'` key in `elgg-plugin.php`
-(NOT `'cli' => ['commands' => ...]` — that key shape does not exist in 4.x).
+Registered via the top-level `'cli_commands'` key in `elgg-plugin.php`.
 
 ## Key Views
 
@@ -162,8 +171,10 @@ Declarative in `elgg-plugin.php` under `view_extensions`:
 | Module | Used at | Purpose |
 |--------|---------|---------|
 | `elgg/tour/display` | global init | Bind topbar "Help" link, fetch `/tour/data`, hand off to the configured library |
-| `elgg/tour/reorder` | admin tour view | jQuery UI sortable for tour stops (explicit `require('jquery-ui/widgets/sortable')` for 4.x granular jQuery UI) |
+| `elgg/tour/reorder` | admin tour view | jQuery UI sortable for tour stops (explicit `require('jquery-ui/widgets/sortable')` — still valid in 5.x; bundled jquery-ui split into submodules) |
 | `elgg/tour/edit` | (currently inactive) | Click-to-pick UI for selecting a DOM target when editing a stop |
+
+ES module conversion happens in the 5.x → 6.x step.
 
 ## Dependencies
 
@@ -172,9 +183,10 @@ Declarative in `elgg-plugin.php` under `view_extensions`:
   via `class_exists` guards but does not require this plugin.
 
 ### Composer
-- `php >=7.4`
-- `elgg/elgg ^4.3`
+- `php >=8.2`
+- `elgg/elgg ~5.1.0`
 - `composer/installers ^2.0`
+- `ext-intl *` (required by Elgg 5.x)
 
 ### Vendored libraries (do not modify)
 - `vendors/hopscotch/` — Hopscotch tour library
@@ -182,98 +194,104 @@ Declarative in `elgg-plugin.php` under `view_extensions`:
 
 ## Seeding
 
-This plugin does NOT ship a `\Elgg\Database\Seeds\Seed` subclass. Tour
-data is content-specific (admins author it once per site URL) and seeding
-random pages/stops with no targets in the rendered DOM would produce no
-useful dev/QA value. Documented absence per the migration acceptance gate.
+This plugin owns the following entity types and ships a `Seeder` subclass
+(`Tour\Database\Seeds\Seeder`):
+
+- `object/tour_page`
+- `object/tour_stop`
+
+**Seed dev/QA data:**
+```bash
+php elgg-cli database:seed --type=tour --limit=10
+php elgg-cli database:unseed --type=tour
+```
+
+Verified end-to-end on Elgg 5.x: both `seed` and `unseed` run cleanly.
 
 ## Migration Notes
 
-### 3.x → 4.x on 2026-05-24
+### 4.x → 5.x on 2026-05-24
 
-**Automated rules applied** (`skills/elgg-migrate/rules/3x-to-4x`):
-- `update-manifest-version-4x`: composer `elgg/elgg ^3.0 -> ^4.3`; `manifest.xml` 3.0 -> 4.0 (file later deleted)
-- `jquery-deprecated-apis-4x`: `$.parseJSON()` -> `JSON.parse()` in `views/default/js/elgg/tour/display.js`
-- `scaffold-doctor-command`: scaffolded `Tour\Cli\DoctorCommand` (`tour:doctor`)
-- `jquery-ui-requires-4x` (manual application): added `require('jquery-ui/widgets/sortable')` to `reorder.js`
+**Automated rules applied** (`skills/elgg-migrate/rules/4x-to-5x`):
+- `update-manifest-version-5x`: composer `elgg/elgg ^4.3 -> ~5.0.0`,
+  `php >=7.4 -> >=8.1`, added `ext-intl *` requirement. Constraints
+  later tightened by hand to the documented table values: `~5.1.0`
+  for `elgg/elgg` and `>=8.2` for PHP per SKILL.md's Composer
+  Requirements table.
+- `scaffold-seeder`: generated `classes/Tour/Database/Seeds/Seeder.php`
+  for `tour_page` and `tour_stop` subtypes, appended a `Seeding`
+  section to ARCHITECTURE.md.
 
 **LLM-guided rewrites**:
-- Deleted `start.php` (4.x rejects any start.php — even empty)
-- Deleted `manifest.xml` (4.x: composer.json is sole metadata source)
-- Added `Tour\Bootstrap extends \Elgg\DefaultPluginBootstrap` for runtime
-  registrations that depend on plugin settings (CSS/JS library selection,
-  topbar menu item)
-- Updated `elgg-plugin.php`:
-  - bumped plugin version 3.0.0 -> 4.0.0
-  - added `'bootstrap' => 'Tour\\Bootstrap'`
-  - migrated entity flags (`searchable=false`) into the `'capabilities'` array
-  - added `'view_extensions'` declarative section for `elgg.css` and `admin.css`
-  - registered CLI command under correct 4.x key `'cli_commands' => [...]`
-    (skill's `scaffold-doctor-command` rule wrote `'cli' => ['commands' => ...]`
-    which is NOT a valid 4.x key — runtime registration silently fails)
-- `Tour\Cli\DoctorCommand`:
-  - rewrote `command()` to 4.x `Elgg\Cli\Command` signature (no args, uses
-    `$this->output`)
-  - renamed internal helper `write()` -> `emit()` (`Elgg\Cli\BaseCommand::write`
-    is `final`)
-- Replaced `forward(REFERER)` in admin edit views with
-  `throw new \Elgg\Exceptions\Http\EntityNotFoundException(...)` (`forward()`
-  removed in 4.x)
-- Replaced `elgg_register_css()` / `elgg_load_css()` (removed in 4.x) with
-  `elgg_register_external_file('css', ...)` / `elgg_load_external_file('css', ...)`
-- composer.json: bumped `php` to `>=7.4`, `composer/installers` to `^2.0`
-  per the skill's Composer Requirements Per Migration Branch table
-- Auto-fixed coding style with `phpcbf --standard=Elgg` after scaffold
+- `elgg-plugin.php`: renamed `'hooks'` key -> `'events'` (entries
+  unchanged); bumped plugin version `4.0.0` -> `5.0.0`.
+- `Tour\Page\EntityMenu::setUp` and `Tour\Stop\EntityMenu::setUp`:
+  swapped `\Elgg\Hook` -> `\Elgg\Event` (type hint + param name +
+  docblock). Method bodies unchanged — `getEntityParam()`,
+  `getValue()`, return-shape handling are identical between the
+  two classes.
+- `Tour\Bootstrap::init()`: appended runtime registration of the
+  seeder event handler `elgg_register_event_handler('seeds',
+  'database', [\Tour\Database\Seeds\Seeder::class, 'addSeed'])`.
+  The seeder cannot be wired via the declarative `'events'` key in
+  `elgg-plugin.php` cleanly (FQCN reference would require autoload
+  side-effects at config load), so Bootstrap is the correct home.
+- `Tour\Page::getURL()`: added strict return type `: string` to
+  match the new 5.x `ElggEntity::getURL(): string` signature
+  (incompatible-signature fatal during seeder run otherwise).
+  Wrapped the relative path in `elgg_normalize_url()` so the contract
+  ("returns absolute URL") is honored.
+- PHPCS auto-fixes on the scaffolded Seeder (`phpcbf --standard=Elgg`):
+  86 errors fixed (tabs, brace placement, blank lines); 5 remaining
+  missing `@return` / `@param` docblocks added by hand.
+
+**Docker infra**:
+- Replaced `docker/` template files with `infra/elgg5/` equivalents
+  (Dockerfile, docker-compose.yml, elgg-composer.json, elgg-install.sh,
+  .env.example) per Iron Law 12.
 
 **Data preservation**:
-- Subtype string constants `tour_page` and `tour_stop` are unchanged
+- Subtype string constants `tour_page` and `tour_stop` are unchanged.
 - Entity class refs in `elgg-plugin.php` remain string literals (no
-  `::class` / `::SUBTYPE`) — autoloader is not wired in at config load
-- No `Elgg\Upgrade\Batch` script needed (no schema or data shape change)
+  `::class` / `::SUBTYPE`) — autoloader is not wired in at config load.
+- No `Elgg\Upgrade\Batch` script needed (no schema or data shape change).
 
-**Test results** (Elgg 4.x Docker stack via `elgg-migrate-run up tour --version=elgg4`):
-- Plugin activation: PASS (first try)
+**Test results** (Elgg 5.x Docker stack via `elgg-migrate-run up tour --version=elgg5`):
+- Plugin activation: PASS (first try after Page::getURL signature fix)
 - `elgg-migrate-verify` gates:
   - PHP syntax (excl. vendor/tests): PASS
-  - Homepage renders (7829 bytes): PASS
-  - Login page renders (7829 bytes): PASS
+  - Homepage renders (9428 bytes): PASS
+  - Login page renders (9515 bytes): PASS
   - No PHP Fatal/Error in Apache log: PASS
   - PHP_CodeSniffer (Elgg standard): PASS (0 errors)
-  - PHPUnit: SKIP (no suite — same documented gap as 3.x baseline)
+  - PHPUnit: SKIP (no suite — same documented gap as earlier versions)
 - `--verify` (PostMigrationVerifier): PASS (no version-boundary violations)
-- `--security` (SecuritySweep): PASS
-- `--audit` (DependencyAudit): SKIP (no composer.lock)
-- `tour:doctor` CLI: runs cleanly on activated plugin
+- `--security` (SecuritySweep): PASS (1 informational warning — plaintext
+  HTTP link in `vendors/joyride/demo/demo.html`, vendored 3rd-party file)
+- `tour:doctor` CLI: runs cleanly on activated plugin (`tour:doctor complete — no issues found`)
+- Seeder end-to-end: `database:seed --type=tour --limit=2` and
+  `database:unseed --type=tour` both PASS
 
 **Iron Laws status**:
-1. Single-step (3.x -> 4.x only): OK
-2. Branch `migrate/elgg-4.x`: OK
+1. Single-step (4.x -> 5.x only): OK
+2. Branch `migrate/elgg-5.x`: OK
 3. Verified in Docker: OK
-4. Pre-migration tests: SKIP (legacy plugin, no PHPUnit baseline; gap documented in 3.x ARCHITECTURE)
+4. Pre-migration tests: SKIP (legacy plugin, no PHPUnit baseline; gap
+   documented in earlier ARCHITECTURE notes — Playwright e2e + Vitest
+   directories present but empty)
 5. No closures in elgg-plugin.php: OK (Bootstrap class holds runtime regs)
 6. Directory name matches composer name: OK (`tour` == `hypejunction/tour`)
-7. Only 4.x APIs (no `\Elgg\Event` leakage): OK
-8. Security sweep clean: OK
+7. Only 5.x APIs (no `\Elgg\Event` leakage into earlier branches; no
+   ES module / `'restorable'` capability / `elgg_register_esm` leakage
+   from 6.x+): OK
+8. Security sweep clean: OK (only vendored-file warning)
 9. ARCHITECTURE.md updated: OK
-10. PHPCS Elgg standard: OK
-11. Composer constraints per table: OK
-12. Docker infra under `docker/`: OK
-13. Branch based on `migrate/elgg-3.x`: OK
+10. PHPCS Elgg standard: OK (0 errors after phpcbf + manual docblocks)
+11. Composer constraints per table: OK (`~5.1.0`, `>=8.2`, `ext-intl`)
+12. Docker infra under `docker/` is elgg5 template: OK
+13. Branch based on `migrate/elgg-4.x`: OK
 
 ## For Future Migrations
-
-### 4.x → 5.x checklist
-- [ ] Rename `'hooks'` key in `elgg-plugin.php` -> `'events'`
-- [ ] Replace `\Elgg\Hook` type hint with `\Elgg\Event` in
-      `Tour\Page\EntityMenu::setUp` and `Tour\Stop\EntityMenu::setUp`
-- [ ] Consider renaming `Tour\Page\EntityMenu` / `Tour\Stop\EntityMenu`
-      to `Tour\Page\Events\EntityMenu` etc., consistent with 5.x conventions
-- [ ] Form preparation classes: `Tour\Page\Form` / `Tour\Stop\Form` could
-      become `Tour\Forms\PrepareTourPageFields` etc. (optional refactor)
-- [ ] Bootstrap callback signature change: in 5.x, hooks/events take a single
-      `Elgg\Event` arg with `->getValue() / ->getParam() / ->setValue()`
-- [ ] Bump composer `php` to `>=8.2` (Elgg 5.x floor) and `elgg/elgg` to `^5.0`
-- [ ] Update `DoctorCommand` if `Elgg\Cli\Command` contract drifts
 
 ### 5.x → 6.x checklist
 - [ ] Convert `views/default/js/elgg/tour/{display,edit,reorder}.js` from
@@ -281,19 +299,19 @@ useful dev/QA value. Documented absence per the migration acceptance gate.
 - [ ] Replace `elgg_define_js()` (in Bootstrap) with `elgg_register_esm()`
 - [ ] Replace `elgg_require_js()` with `elgg_import_esm()`
 - [ ] Re-evaluate whether to drop the vendored Hopscotch/Joyride libraries
-      in favor of a modern lightweight alternative (e.g. driver.js, shepherd.js)
-      — tracked under epic `elgg-migrate-4yai3` (shepherd.js chosen)
+      in favor of a modern lightweight alternative (e.g. driver.js,
+      shepherd.js) — tracked under epic `elgg-migrate-4yai3` (shepherd.js chosen)
+- [ ] Bump composer `php` to `>=8.2`, `elgg/elgg` to `~6.1.0`
 
 ### 6.x → 7.x checklist
 - [ ] Add `'restorable' => true` to entity capabilities for trash/soft-delete
 - [ ] Audit any `elgg_register_external_file` usage — signature now returns void in 7.x
+- [ ] Bump composer `php` to `>=8.3`, `elgg/elgg` to `~7.0.0`
 
 ### Known issues / debt
 - Plugin has zero automated test coverage. Both PHPUnit fixtures (entity
   CRUD, action contracts) and Playwright end-to-end (admin flow, tour
   overlay rendering) should be added before the next major step.
 - Vendored joyride library bundles its own `jquery-1.10.1.js` with
-  deprecated jQuery 3.x APIs (`$.parseJSON`, `.bind`, `.delegate`). The
-  `jquery-deprecated-apis-4x` AST rule wanted to rewrite these but the
-  changes were reverted — vendored 3rd-party libs should not be modified.
-  Replacement by shepherd.js (per epic `4yai3`) will retire this debt.
+  deprecated jQuery 3.x APIs. Replacement by shepherd.js (per epic
+  `4yai3`) will retire this debt.
