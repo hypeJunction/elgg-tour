@@ -31,7 +31,7 @@ class DoctorCommand extends Command {
 		$exitCode = self::SUCCESS;
 
 		// Count object/tour_page entities
-		$count_tour_page = (int) elgg_get_entities([
+		$count_tour_page = (int) \elgg_get_entities([
 			'type' => 'object',
 			'subtype' => 'tour_page',
 			'count' => true,
@@ -39,7 +39,7 @@ class DoctorCommand extends Command {
 		$this->emit("  object/tour_page: {$count_tour_page} entities");
 
 		// Count object/tour_stop entities
-		$count_tour_stop = (int) elgg_get_entities([
+		$count_tour_stop = (int) \elgg_get_entities([
 			'type' => 'object',
 			'subtype' => 'tour_stop',
 			'count' => true,

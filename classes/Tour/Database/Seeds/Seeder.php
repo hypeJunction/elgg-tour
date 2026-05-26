@@ -76,7 +76,7 @@ final class Seeder extends Seed {
 	 */
 	public function unseed(): void {
 		// Unseed object/tour_page
-		$entities = elgg_get_entities([
+		$entities = \elgg_get_entities([
 			'type' => 'object',
 			'subtype' => 'tour_page',
 			'metadata_name_value_pairs' => [['name' => '__faker', 'value' => true]],
@@ -87,7 +87,7 @@ final class Seeder extends Seed {
 		}
 
 		// Unseed object/tour_stop
-		$entities = elgg_get_entities([
+		$entities = \elgg_get_entities([
 			'type' => 'object',
 			'subtype' => 'tour_stop',
 			'metadata_name_value_pairs' => [['name' => '__faker', 'value' => true]],
