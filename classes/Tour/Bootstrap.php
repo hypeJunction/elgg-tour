@@ -20,32 +20,32 @@ class Bootstrap extends DefaultPluginBootstrap {
 	 * @return void
 	 */
 	public function init() {
-		$js_lib = (string) elgg_get_plugin_setting('js_library', 'tour');
+		$js_lib = (string) \elgg_get_plugin_setting('js_library', 'tour');
 
 		if ($js_lib === 'joyride') {
-			elgg_register_external_file('css', 'joyride', elgg_get_site_url() . 'mod/tour/vendors/joyride/joyride-2.1.css');
-			elgg_load_external_file('css', 'joyride');
+			\elgg_register_external_file('css', 'joyride', \elgg_get_site_url() . 'mod/tour/vendors/joyride/joyride-2.1.css');
+			\elgg_load_external_file('css', 'joyride');
 
-			elgg_define_js('joyride', [
+			\elgg_define_js('joyride', [
 				'src' => '/mod/tour/vendors/joyride/jquery.joyride-2.1.js',
 				'exports' => 'joyride',
 			]);
 		} else {
-			elgg_register_external_file('css', 'hopscotch', elgg_get_site_url() . 'mod/tour/vendors/hopscotch/css/hopscotch.min.css');
-			elgg_load_external_file('css', 'hopscotch');
+			\elgg_register_external_file('css', 'hopscotch', \elgg_get_site_url() . 'mod/tour/vendors/hopscotch/css/hopscotch.min.css');
+			\elgg_load_external_file('css', 'hopscotch');
 
-			elgg_define_js('hopscotch', [
+			\elgg_define_js('hopscotch', [
 				'src' => '/mod/tour/vendors/hopscotch/hopscotch.min.js',
 				'exports' => 'hopscotch',
 			]);
 		}
 
-		elgg_require_js('elgg/tour/display');
+		\elgg_require_js('elgg/tour/display');
 
-		elgg_register_menu_item('topbar', [
+		\elgg_register_menu_item('topbar', [
 			'name' => 'tour',
 			'href' => '#',
-			'text' => elgg_echo('tour:start'),
+			'text' => \elgg_echo('tour:start'),
 			'id' => 'tour-start',
 			'section' => 'alt',
 			'link_class' => 'elgg-topbar-dropdown-link',
@@ -53,6 +53,6 @@ class Bootstrap extends DefaultPluginBootstrap {
 		]);
 
 		// Register seeder for fleet seeding / fixture creation.
-		elgg_register_event_handler('seeds', 'database', [\Tour\Database\Seeds\Seeder::class, 'addSeed']);
+		\elgg_register_event_handler('seeds', 'database', [\Tour\Database\Seeds\Seeder::class, 'addSeed']);
 	}
 }

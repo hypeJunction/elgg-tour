@@ -28,6 +28,6 @@ class Page extends ElggObject {
 	 * @return string
 	 */
 	public function getURL(): string {
-		return elgg_normalize_url("admin/administer_utilities/tour/view?guid={$this->guid}");
+		return \elgg_normalize_url("admin/administer_utilities/tour/view?guid={$this->guid}");
 	}
 }
