@@ -38,7 +38,7 @@ class Form {
 			}
 		}
 
-		$pages = elgg_get_entities([
+		$pages = \elgg_get_entities([
 			'type' => 'object',
 			'subtype' => \Tour\Page::SUBTYPE,
 			'limit' => 0,
