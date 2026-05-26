@@ -1,42 +1,66 @@
 /**
- * Bind topbar "Help" link, fetch /tour/data, hand off to the configured library.
+ * Bind topbar "Help" link, fetch /tour/data, hand off to shepherd.js.
  *
- * The configured client library (Hopscotch or Joyride) is loaded site-wide
- * as a global script (window.hopscotch or jQuery .joyride()) by the plugin
- * Bootstrap, so we rely on the global existing at click time.
+ * /tour/data returns a JSON document with a `steps` array — each step has
+ * the keys shepherd.js's Step config understands (id, title, text, attachTo).
+ * The display module is a thin glue layer: no DOM mutation beyond what
+ * shepherd.js drives, no jQuery dependency, no legacy globals.
  */
-import 'jquery';
 import elgg from 'elgg';
 
-var link = $('#tour-start');
-var library = link.attr('data-library');
+const siteUrl = elgg.get_site_url();
+const page = window.location.href.replace(siteUrl, '').split('/')[0];
+const link = document.getElementById('tour-start');
 
-// Remove site URL to get the path
-var path = window.location.href.replace(elgg.get_site_url(), '');
+if (link) {
+	link.addEventListener('click', async (e) => {
+		e.preventDefault();
 
-// Get the first page segment of the path
-var page = path.split('/')[0];
+		const [Shepherd, response] = await Promise.all([
+			import(`${siteUrl}mod/tour/vendors/shepherd/shepherd.mjs`).then(m => m.default),
+			elgg.fetch({
+				url: 'tour/data',
+				data: { page: page },
+			}),
+		]);
 
-link.on('click', function (e) {
-	e.preventDefault();
+		const config = typeof response === 'string' ? JSON.parse(response) : response;
+		const steps = Array.isArray(config.steps) ? config.steps : [];
 
-	elgg.get({
-		url: 'tour/data',
-		data: {'page': page},
-		success: function (data) {
-			if (library === 'hopscotch') {
-				var json = JSON.parse(data);
-
-				window.hopscotch.startTour(json);
-			} else {
-				$('body').append(data);
-
-				$('#tour-outline').joyride({
-					autoStart: true,
-					modal: true,
-					expose: true
-				});
-			}
+		if (steps.length === 0) {
+			return;
 		}
+
+		const tour = new Shepherd.Tour({
+			useModalOverlay: true,
+			defaultStepOptions: {
+				cancelIcon: { enabled: true },
+				scrollTo: { behavior: 'smooth', block: 'center' },
+				classes: 'elgg-tour-step',
+			},
+		});
+
+		steps.forEach((step, index) => {
+			tour.addStep({
+				id: step.id || `step-${index}`,
+				title: step.title,
+				text: step.text,
+				attachTo: step.attachTo || undefined,
+				buttons: [
+					...(index > 0 ? [{
+						text: elgg.echo('previous'),
+						action: () => tour.back(),
+						classes: 'elgg-tour-btn elgg-tour-btn-secondary',
+					}] : []),
+					{
+						text: index === steps.length - 1 ? elgg.echo('done') : elgg.echo('next'),
+						action: () => index === steps.length - 1 ? tour.complete() : tour.next(),
+						classes: 'elgg-tour-btn elgg-tour-btn-primary',
+					},
+				],
+			});
+		});
+
+		tour.start();
 	});
-});
+}

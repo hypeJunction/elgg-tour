@@ -1,9 +1,9 @@
 <?php
 /**
- * Provide tour data for the client
+ * Provide tour data for the client.
  *
- * Returns either JSON for the Hopscotch library or an ordered
- * HTML list for the Joyride library.
+ * Returns a shepherd.js step-configuration JSON document built from the
+ * Tour\Page entity associated with the requested page handler.
  */
 
 $page = get_input('page');
@@ -39,7 +39,5 @@ if ($pages) {
 	]);
 }
 
-$js_lib = elgg_get_plugin_setting('js_library', 'tour');
-
-// TODO Is it possible to cache the results to disk?
-echo elgg_view("tour/{$js_lib}", ['stops' => $stops]);
+elgg_set_http_header('Content-Type: application/json');
+echo elgg_view('tour/shepherd', ['stops' => $stops]);

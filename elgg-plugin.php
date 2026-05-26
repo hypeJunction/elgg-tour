@@ -7,7 +7,7 @@
 return [
 	'plugin' => [
 		'name' => 'Tour',
-		'version' => '7.0.0',
+		'version' => '7.1.0',
 	],
 	'bootstrap' => 'Tour\\Bootstrap',
 	'entities' => [

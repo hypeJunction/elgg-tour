@@ -1,17 +1,21 @@
 
-.joyride-tip-guide {
-	z-index: 10000 !important;
-}
+/*
+ * Tour overrides on top of shepherd.css.
+ *
+ * shepherd.js ships with sensible defaults; we only nudge the z-index up so
+ * shepherd's modal overlay sits above Elgg's topbar / sticky nav, and widen
+ * the step box modestly to match the legacy 500px joyride look.
+ */
 
-.joyride-expose-cover {
+.shepherd-modal-overlay-container {
 	z-index: 11000 !important;
 }
 
-.joyride-expose-wrapper {
-	background-color: transparent !important;
-	z-index: 10000 !important;
+.shepherd-element {
+	z-index: 12000 !important;
+	max-width: 500px;
 }
 
-.joyride-tip-guide {
-	width: 500px !important;
+.elgg-tour-step .shepherd-button {
+	margin-right: 0.25rem;
 }
