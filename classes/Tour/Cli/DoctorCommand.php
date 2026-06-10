@@ -14,13 +14,11 @@ use Elgg\Cli\Command;
  */
 class DoctorCommand extends Command {
 
-	/** @var mixed */
-	protected static $defaultName = 'tour:doctor';
-
 	/**
 	 * @return void
 	 */
 	protected function configure(): void {
+		$this->setName('tour:doctor');
 		$this->setDescription('Post-migration data integrity checks for tour');
 	}
 
