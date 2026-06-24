@@ -2,7 +2,7 @@
  * Draggable info text reordering — admin tour view.
  */
 import 'jquery';
-import 'jquery-ui/widgets/sortable';
+import 'jquery-ui';
 import elgg from 'elgg';
 
 var guid = elgg.get_page_owner_guid();
