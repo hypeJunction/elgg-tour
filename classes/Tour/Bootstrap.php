@@ -22,6 +22,27 @@ class Bootstrap extends DefaultPluginBootstrap {
 	 * @return void
 	 */
 	public function init() {
+		self::registerTourForUsers();
+
+		elgg_register_event_handler('seeds', 'database', [\Tour\Database\Seeds\Seeder::class, 'addSeed']);
+	}
+
+	/**
+	 * Register the tour UI, but only for an authenticated session.
+	 *
+	 * The tour is a logged-in onboarding feature: its trigger (#tour-start) lives in
+	 * the topbar and elgg/tour/display only enhances that element. Registering the
+	 * module, the shepherd CSS, and the topbar item unconditionally added a dead ESM
+	 * import (and CSS) to every anonymous page, including the homepage
+	 * (bd elgg-migrate-xhigk). Gate the whole block on elgg_is_logged_in().
+	 *
+	 * @return void
+	 */
+	public static function registerTourForUsers(): void {
+		if (!elgg_is_logged_in()) {
+			return;
+		}
+
 		$site_url = elgg_get_site_url();
 
 		elgg_register_external_file('css', 'tour.shepherd', $site_url . 'mod/tour/vendors/shepherd/shepherd.css');
@@ -40,7 +61,5 @@ class Bootstrap extends DefaultPluginBootstrap {
 			'section' => 'alt',
 			'link_class' => 'elgg-topbar-dropdown-link',
 		]);
-
-		elgg_register_event_handler('seeds', 'database', [\Tour\Database\Seeds\Seeder::class, 'addSeed']);
 	}
 }
